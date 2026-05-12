@@ -247,6 +247,64 @@ npm run build
 
 </details>
 
+<details>
+<summary><strong>Sub2API 接入与跨域排查</strong></summary>
+
+如果使用自己部署的 Sub2API，并且希望浏览器直接请求该服务，可以在 Sub2API 侧放行本项目页面域名。否则即使 API Key 和接口路径都正确，请求也可能被浏览器的 CORS 机制拦截。
+
+常见现象：
+
+- 浏览器控制台出现 `CORS`、`Access-Control-Allow-Origin` 或 `preflight` 相关错误。
+- `OPTIONS` 预检请求返回 `403`、无响应，或响应头中没有 `Access-Control-Allow-Origin`。
+- 在服务器上用 `curl` 直接请求 API 正常，但网页里无法调用。
+
+你可以用下面的命令检查 Sub2API 是否允许在线体验页跨域访问：
+
+```bash
+curl -i -X OPTIONS "https://你的-sub2api-域名/v1/images/generations" \
+  -H "Origin: https://gpt-image-playground.cooksleep.dev" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: authorization,content-type"
+```
+
+如果使用 GitHub Pages 版本，把 `Origin` 改为：
+
+```text
+https://cooksleep.github.io
+```
+
+成功时应能看到类似响应头：
+
+```text
+Access-Control-Allow-Origin: https://gpt-image-playground.cooksleep.dev
+Access-Control-Allow-Headers: ... Authorization ...
+```
+
+Sub2API 配置文件写法：
+
+```yaml
+cors:
+  allowed_origins:
+    - https://gpt-image-playground.cooksleep.dev
+    - https://cooksleep.github.io
+  allow_credentials: false
+```
+
+Docker / Docker Compose 部署也可以使用环境变量写法：
+
+```yaml
+environment:
+  CORS_ALLOWED_ORIGINS: "https://gpt-image-playground.cooksleep.dev,https://cooksleep.github.io"
+  CORS_ALLOW_CREDENTIALS: "false"
+```
+
+Sub2API 的示例配置说明 `cors.allowed_origins` 留空会禁用跨域请求；其 CORS 中间件会在来源不匹配时拒绝 `OPTIONS` 预检请求。参考：
+
+- [Sub2API config.example.yaml](https://github.com/Wei-Shaw/sub2api/blob/main/deploy/config.example.yaml#L70-L79)
+- [Sub2API CORS middleware](https://github.com/Wei-Shaw/sub2api/blob/main/backend/internal/server/middleware/cors.go#L31-L95)
+
+</details>
+
 ---
 
 ## 🛠️ URL 传参快速填充
